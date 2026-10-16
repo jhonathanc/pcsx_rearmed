@@ -11,7 +11,9 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
+#ifndef __PS3__
 #include <strings.h>
+#endif
 #include <time.h>
 #include <math.h>
 #include <errno.h>
@@ -1756,7 +1758,7 @@ static void extract_directory(char *buf, const char *path, size_t size)
    }
 }
 
-#if defined(__QNX__) || defined(_WIN32)
+#if defined(__QNX__) || defined(_WIN32) || defined(__PS3__)
 /* Blackberry QNX doesn't have strcasestr */
 
 /*

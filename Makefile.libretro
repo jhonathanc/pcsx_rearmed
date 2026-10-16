@@ -300,6 +300,35 @@ else ifeq ($(platform), arm64)
    CFLAGS := $(filter-out -O2, $(CFLAGS))
    CFLAGS += -O3 -ftree-vectorize
 
+# PS3 Cell SDK
+else ifeq ($(platform), ps3)
+	TARGET := $(TARGET_NAME)_libretro_ps3.a
+	PS3_LIGHTREC_LOG ?= 0
+	CFLAGS += -std=gnu99 -include include/ps3_gcc_compat.h
+	CFLAGS += -DPS3_LIGHTREC_LOG=$(PS3_LIGHTREC_LOG)
+	CFLAGS += -DBLARGG_BIG_ENDIAN=1 -D__ppc__ -D__PS3__ -DNO_DYLIB
+	CFLAGS += -fno-strict-aliasing
+	NO_UNDEF_CHECK := 1
+	STATIC_LINKING := 1
+	NO_MMAP := 1
+	NO_POSIX_MEMALIGN := 1
+	LIBPTHREAD :=
+	LIBDL :=
+	HAVE_PHYSICAL_CDROM = 0
+	USE_ASYNC_CDROM = 0
+	USE_ASYNC_GPU = 0
+	USE_ASYNC_SPU = 0
+	USE_LIBRETRO_VFS = 0
+	ARCH := powerpc
+	LIGHTREC_CODE_INV := 1
+	ifeq ($(DYNAREC),lightrec)
+		OBJS += libpcsxcore/lightrec/ps3.o libpcsxcore/lightrec/ps3_test.o
+libpcsxcore/lightrec/ps3_test.o: CFLAGS += -DPS3_LIGHTREC_CORE
+		ifeq ($(PS3_LIGHTREC_LOG),1)
+			OBJS += libpcsxcore/lightrec/ps3_log.o
+		endif
+	endif
+
 # Lightweight PS3 Homebrew SDK
 else ifeq ($(platform), psl1ght)
 	TARGET := $(TARGET_NAME)_libretro_psl1ght.a
