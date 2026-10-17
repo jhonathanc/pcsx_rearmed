@@ -75,9 +75,17 @@
 
 #define GETLEs16(X) ((int16_t)GETLE16((uint16_t *)(X)))
 
+#if defined(__PS3__) && defined(__GNUC__) && __GNUC__ < 5 && !defined(__SNC__) \
+    && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+/* GCC 4.1 does not fold byte swaps into reversed loads/stores. */
+#include <ppu_intrinsics.h>
+#define GETLE16(X) __lhbrx((void *)(X))
+#define PUTLE16(X, Y) __sthbrx((void *)(X), (uint16_t)(Y))
+#else
 #define GETLE16(X) LE2HOST16(*(uint16_t *)(X))
-#define GETLE32_(X) LE2HOST32(*(uint32_t *)(X))
 #define PUTLE16(X, Y) do{*((uint16_t *)(X))=HOST2LE16((uint16_t)(Y));}while(0)
+#endif
+#define GETLE32_(X) LE2HOST32(*(uint32_t *)(X))
 #define PUTLE32_(X, Y) do{*((uint32_t *)(X))=HOST2LE32((uint32_t)(Y));}while(0)
 #if defined(__arm__) && !defined(HAVE_ARMV6)
 // for (very) old ARMs with no unaligned loads?
