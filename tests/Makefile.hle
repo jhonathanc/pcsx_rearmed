@@ -1,0 +1,11 @@
+# Run from the core root; -B ensures assertions are enabled in existing objects.
+override TARGET := tests/hle-test$(if $(findstring mingw,$(shell $(CC) -dumpmachine)),.exe)
+override MAIN_LDFLAGS :=
+override ASSERTS := 1
+OBJS += tests/hle-test.o
+include Makefile.libretro
+
+run-hle: all
+	./$(TARGET)
+
+.PHONY: run-hle

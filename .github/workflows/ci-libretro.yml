@@ -11,6 +11,8 @@ jobs:
       run: make -j$(getconf _NPROCESSORS_ONLN) -f Makefile.libretro
     - name: PS3 logging regression tests
       run: make -C tests/ps3 -j$(getconf _NPROCESSORS_ONLN) run
+    - name: HLE exception regression tests
+      run: make -B -f tests/Makefile.hle -j$(getconf _NPROCESSORS_ONLN) run-hle
 
   build-libretro-win32:
     runs-on: ubuntu-latest
@@ -26,6 +28,8 @@ jobs:
       run: make -j$(getconf _NPROCESSORS_ONLN) -f Makefile.libretro platform=win32 CC=x86_64-w64-mingw32-gcc
     - name: Build PS3 logging regression tests
       run: make -C tests/ps3 -j$(getconf _NPROCESSORS_ONLN) CC=x86_64-w64-mingw32-gcc
+    - name: Build HLE exception regression tests
+      run: make -B -f tests/Makefile.hle -j$(getconf _NPROCESSORS_ONLN) platform=win32 CC=x86_64-w64-mingw32-gcc
 
   build-libretro-android:
     runs-on: ubuntu-latest
