@@ -20,11 +20,17 @@ endif
 
 TESTS = $(addsuffix $(EXE_EXT),log-path-test startup-quiet-test startup-log-test)
 TESTS += $(addsuffix $(EXE_EXT),startup-selftest-quiet-test startup-selftest-log-test)
+TESTS += psl1ght-log-path-test$(EXE_EXT)
+TESTS += startup-psl1ght-selftest-test$(EXE_EXT)
+TESTS += startup-platform-selftest-test$(EXE_EXT)
 
 all: $(TESTS)
 
 log-path-test$(EXE_EXT): log_path_test.c ../../libpcsxcore/lightrec/ps3_log.c
-	$(CC) $(CFLAGS) -Iinclude -DPS3_LIGHTREC_LOG=1 -Dfopen=ps3_test_fopen $^ -o $@
+	$(CC) $(CFLAGS) -Iinclude -D__PS3__ -D__PS3_SONY_SDK__ -DPS3_LIGHTREC_LOG=1 -Dfopen=ps3_test_fopen $^ -o $@
+
+psl1ght-log-path-test$(EXE_EXT): psl1ght_log_test.c ../../libpcsxcore/lightrec/ps3_log.c
+	$(CC) $(CFLAGS) -Iinclude -D__PS3__ -D__PSL1GHT__ -DPS3_LIGHTREC_LOG=1 -Dmkdir=ps3_test_mkdir -Dfopen=ps3_test_fopen $^ -o $@
 
 startup-quiet-test$(EXE_EXT): startup_test.c ../../libpcsxcore/lightrec/ps3_init.c
 	$(CC) $(CFLAGS) -DPS3_LIGHTREC_LOG=0 -DPS3_LIGHTREC_SELFTEST=0 $^ -o $@
@@ -33,10 +39,16 @@ startup-log-test$(EXE_EXT): startup_test.c ../../libpcsxcore/lightrec/ps3_init.c
 	$(CC) $(CFLAGS) -DPS3_LIGHTREC_LOG=1 -DPS3_LIGHTREC_SELFTEST=0 $^ -o $@
 
 startup-selftest-quiet-test$(EXE_EXT): startup_test.c ../../libpcsxcore/lightrec/ps3_init.c ../../libpcsxcore/lightrec/ps3_test.c $(OBJS)
-	$(CC) $(CFLAGS) -D__PS3__ -DPS3_LIGHTREC_CORE -DPS3_LIGHTREC_LOG=0 -DPS3_LIGHTREC_SELFTEST=1 $^ $(LDLIBS) -o $@
+	$(CC) $(CFLAGS) -D__PS3__ -D__PS3_SONY_SDK__ -DPS3_LIGHTREC_CORE -DPS3_LIGHTREC_LOG=0 -DPS3_LIGHTREC_SELFTEST=1 $^ $(LDLIBS) -o $@
 
 startup-selftest-log-test$(EXE_EXT): startup_test.c ../../libpcsxcore/lightrec/ps3_init.c ../../libpcsxcore/lightrec/ps3_test.c $(OBJS)
-	$(CC) $(CFLAGS) -D__PS3__ -DPS3_LIGHTREC_CORE -DPS3_LIGHTREC_LOG=1 -DPS3_LIGHTREC_SELFTEST=1 $^ $(LDLIBS) -o $@
+	$(CC) $(CFLAGS) -D__PS3__ -D__PS3_SONY_SDK__ -DPS3_LIGHTREC_CORE -DPS3_LIGHTREC_LOG=1 -DPS3_LIGHTREC_SELFTEST=1 $^ $(LDLIBS) -o $@
+
+startup-psl1ght-selftest-test$(EXE_EXT): startup_test.c ../../libpcsxcore/lightrec/ps3_init.c ../../libpcsxcore/lightrec/ps3_test.c $(OBJS)
+	$(CC) $(CFLAGS) -D__PS3__ -D__PSL1GHT__ -DPS3_LIGHTREC_CORE -DPS3_LIGHTREC_LOG=0 -DPS3_LIGHTREC_SELFTEST=1 $^ $(LDLIBS) -o $@
+
+startup-platform-selftest-test$(EXE_EXT): startup_test.c ../../libpcsxcore/lightrec/ps3_init.c ../../libpcsxcore/lightrec/ps3_test.c $(OBJS)
+	$(CC) $(CFLAGS) -D__PS3__ -DPS3_LIGHTREC_CORE -DPS3_LIGHTREC_LOG=0 -DPS3_LIGHTREC_SELFTEST=1 $^ $(LDLIBS) -o $@
 
 jit-%.o: ../../deps/lightning/lib/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -52,10 +64,13 @@ mman.o: ../../deps/mman/mman.c
 
 run: all
 	./log-path-test$(EXE_EXT)
+	./psl1ght-log-path-test$(EXE_EXT)
 	./startup-quiet-test$(EXE_EXT)
 	./startup-log-test$(EXE_EXT)
 	./startup-selftest-quiet-test$(EXE_EXT)
 	./startup-selftest-log-test$(EXE_EXT)
+	./startup-psl1ght-selftest-test$(EXE_EXT)
+	./startup-platform-selftest-test$(EXE_EXT)
 
 clean:
 	$(RM) $(OBJS) $(TESTS)

@@ -43,7 +43,7 @@ extern "C" {
 #   endif
 #endif
 
-#if !defined(__PS3__) || !defined(__PSXCOMMON_H__)
+#if !defined(__PS3_SONY_SDK__) || !defined(__PSXCOMMON_H__)
 typedef uint64_t u64;
 typedef uint32_t u32;
 typedef uint16_t u16;

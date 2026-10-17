@@ -2,7 +2,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/process.h>
+#ifdef __PS3_SONY_SDK__
 #include <sys/syscall.h>
+#elif defined(__PSL1GHT__)
+#include <ppu-lv2.h>
+#define system_call_8 lv2syscall8
+#define system_call_5 lv2syscall5
+#define sys_process_getpid sysProcessGetPid
+#else
+#error __PS3_SONY_SDK__ or __PSL1GHT__ must be defined
+#endif
 #include "ps3.h"
 
 unsigned char *lightrec_ps3_code;

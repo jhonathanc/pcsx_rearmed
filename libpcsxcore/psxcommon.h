@@ -52,7 +52,7 @@ extern "C" {
 #endif
 
 // Define types
-#if !defined(__PS3__) || !defined(__LIGHTREC_H__)
+#if !defined(__PS3_SONY_SDK__) || !defined(__LIGHTREC_H__)
 typedef int8_t s8;
 typedef int16_t s16;
 typedef int32_t s32;
@@ -60,7 +60,7 @@ typedef int64_t s64;
 #endif
 typedef intptr_t sptr;
 
-#if !defined(__PS3__) || !defined(__LIGHTREC_H__)
+#if !defined(__PS3_SONY_SDK__) || !defined(__LIGHTREC_H__)
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;

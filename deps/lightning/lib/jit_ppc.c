@@ -24,7 +24,7 @@
 #endif
 
 #define jit_arg_reg_p(i)		((i) >= 0 && (i) < 8)
-#ifdef __PS3__
+#ifdef __PS3_SONY_SDK__
 #  define W_DISP			4
 #else
 #  define W_DISP			0

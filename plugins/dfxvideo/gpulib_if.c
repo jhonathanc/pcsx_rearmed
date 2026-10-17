@@ -75,7 +75,7 @@
 
 #define GETLEs16(X) ((int16_t)GETLE16((uint16_t *)(X)))
 
-#if defined(__PS3__) && defined(__GNUC__) && __GNUC__ < 5 && !defined(__SNC__) \
+#if defined(__PS3_SONY_SDK__) && defined(__GNUC__) && __GNUC__ < 5 && !defined(__SNC__) \
     && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 /* GCC 4.1 does not fold byte swaps into reversed loads/stores. */
 #include <ppu_intrinsics.h>

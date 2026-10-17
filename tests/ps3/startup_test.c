@@ -66,8 +66,18 @@ FILE *lightrec_ps3_open_log(const char *name, const char *mode)
 int main(void)
 {
    int result = lightrec_ps3_init();
+#if PS3_LIGHTREC_SELFTEST
+   unsigned int i;
+   unsigned char code = 0;
+#endif
    if (result || !lightrec_ps3_code || allocation_calls != 1)
       return 1;
+#if PS3_LIGHTREC_SELFTEST
+   for (i = 0; i < 64; i++)
+      code |= lightrec_ps3_code[i];
+   if (!code)
+      return 5;
+#endif
    if (log_init_calls != PS3_LIGHTREC_LOG ||
        open_calls != (1 + PS3_LIGHTREC_SELFTEST) * PS3_LIGHTREC_LOG)
       return 2;
