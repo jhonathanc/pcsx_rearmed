@@ -55,6 +55,37 @@ static int test_exception_return(unsigned int kind)
 	return 0;
 }
 
+static int test_pending_interrupt(void)
+{
+	memset(&psxRegs.GPR, 0, sizeof(psxRegs.GPR));
+	psxBiosInit();
+	psxRegs.CP0.n.SR = 0x401;
+	psxRegs.CP0.n.Cause = 0;
+	psxRegs.GPR.n.k0 = 0x12345678;
+	psxRegs.pc = 0x80021000;
+	psxRegs.psxNextCounter = 0x10000000;
+	psxRegs.next_interupt = psxRegs.cycle + 0x10000000;
+	write32(0x80021000, 0x1000ffff); /* beq zero, zero, -1 */
+	write32(0x80021004, 0); /* nop */
+	write32(0x80000080, (0x3bu << 26) | hleop_exception);
+	psxHu32ref(0x1070) = SWAP32(1);
+	psxHu32ref(0x1074) = SWAP32(1);
+	psxRegs.cpuInRecursion = 1;
+	psxCpu->Clear(0, ~0u);
+	psxCpu->Notify(R3000ACPU_NOTIFY_AFTER_LOAD, (void *)(size_t)1);
+	psxCpu->ExecuteBlock(&psxRegs, EXEC_CALLER_HLE);
+	psxCpu->Notify(R3000ACPU_NOTIFY_BEFORE_SAVE, (void *)(size_t)1);
+	psxRegs.cpuInRecursion--;
+	psxHu32ref(0x1070) = 0;
+	psxHu32ref(0x1074) = 0;
+	if (psxRegs.pc != 0x80000080 || psxRegs.cpuInRecursion) {
+		fprintf(stderr, "FAIL: pending interrupt pc=%08x recursion=%u\n",
+			psxRegs.pc, psxRegs.cpuInRecursion);
+		return 1;
+	}
+	return 0;
+}
+
 int main(void)
 {
 	unsigned int engine, kind, pass;
@@ -69,9 +100,11 @@ int main(void)
 			for (kind = 0; kind < 3; kind++)
 				if (test_exception_return(kind))
 					return 1;
+		if (test_pending_interrupt())
+			return 1;
 		psxCpu->Shutdown();
 		psxMemShutdown();
-		printf("PASS: HLE exception returns engine=%u cases=6\n", engine);
+		printf("PASS: HLE exception returns engine=%u cases=7\n", engine);
 	}
 	return 0;
 }
