@@ -14,8 +14,6 @@ static unsigned int log_init_calls;
 static unsigned int open_calls;
 static int allocation_result;
 
-int lightrec_ps3_jit_selftest(void);
-
 int lightrec_ps3_init_code(FILE *log)
 {
    (void)log;
@@ -67,18 +65,19 @@ FILE *lightrec_ps3_open_log(const char *name, const char *mode)
 
 int main(void)
 {
-   int result = lightrec_ps3_jit_selftest();
+   int result = lightrec_ps3_init();
    if (result || !lightrec_ps3_code || allocation_calls != 1)
       return 1;
-   if (log_init_calls != PS3_LIGHTREC_LOG || open_calls != 2 * PS3_LIGHTREC_LOG)
+   if (log_init_calls != PS3_LIGHTREC_LOG ||
+       open_calls != (1 + PS3_LIGHTREC_SELFTEST) * PS3_LIGHTREC_LOG)
       return 2;
    lightrec_ps3_free_code();
    allocation_result = -42;
-   if (lightrec_ps3_jit_selftest() != -42 || lightrec_ps3_code)
+   if (lightrec_ps3_init() != -42 || lightrec_ps3_code)
       return 3;
    if (allocation_calls != 2 || log_init_calls != 2 * PS3_LIGHTREC_LOG ||
-       open_calls != 3 * PS3_LIGHTREC_LOG)
+       open_calls != (2 + PS3_LIGHTREC_SELFTEST) * PS3_LIGHTREC_LOG)
       return 4;
-   puts("PASS: JIT self-test without log files and allocation error propagation");
+   puts("PASS: optional self-test, unavailable log files and allocation error propagation");
    return 0;
 }

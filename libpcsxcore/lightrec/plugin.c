@@ -31,7 +31,6 @@
 
 #ifdef __PS3__
 #include "ps3.h"
-extern int lightrec_ps3_jit_selftest(void);
 #if PS3_LIGHTREC_LOG && defined(PS3_LIGHTREC_DIAGNOSTICS)
 extern void lightrec_ps3_log_execution(u32, int);
 #endif
@@ -399,7 +398,7 @@ static const struct lightrec_ops lightrec_ops = {
 static int lightrec_plugin_init(void)
 {
 #ifdef __PS3__
-	if (lightrec_ps3_jit_selftest())
+	if (lightrec_ps3_init())
 		return -EINVAL;
 #endif
 	lightrec_map[PSX_MAP_KERNEL_USER_RAM].address = psxRegs.ptrs.psxM;

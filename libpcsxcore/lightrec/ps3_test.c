@@ -242,25 +242,12 @@ static int run_tests(FILE *log)
    return 0;
 }
 
-int lightrec_ps3_jit_selftest(void)
+int lightrec_ps3_jit_selftest(FILE *log)
 {
-   FILE *log = NULL;
    int result;
-#ifdef __PS3__
-#if PS3_LIGHTREC_LOG
-   lightrec_ps3_log_init();
-   log = lightrec_ps3_open_log("ps3-lightrec-selftest.log", "w");
-#endif
-#else
-   log = stdout;
-#endif
-#ifdef __PS3__
-   result = lightrec_ps3_init_code(log);
-   if (result)
-   {
-      test_log(log, "Executable memory FAIL (%08x)\n", (unsigned int)result);
-      goto finish;
-   }
+#ifndef __PS3__
+   if (!log)
+      log = stdout;
 #endif
    test_log(log, "Lightrec JIT ABI tests; pointer=%u, word=%u\n",
          (unsigned)sizeof(void *), (unsigned)sizeof(jit_word_t));
@@ -273,21 +260,12 @@ int lightrec_ps3_jit_selftest(void)
       test_log(log, "MIPS blocks %s (%d)\n", result ? "FAIL" : "PASS", result);
    }
 #endif
-#ifdef __PS3__
-finish:
-   if (result)
-      lightrec_ps3_free_code();
-#if PS3_LIGHTREC_LOG
-   if (log)
-      fclose(log);
-#endif
-#endif
    return result;
 }
 
 #ifndef PS3_LIGHTREC_CORE
 int main(void)
 {
-   return lightrec_ps3_jit_selftest();
+   return lightrec_ps3_jit_selftest(stdout);
 }
 #endif
