@@ -324,7 +324,7 @@ else ifeq ($(platform), ps3)
 	ARCH := powerpc
 	LIGHTREC_CODE_INV := 1
 	ifeq ($(DYNAREC),lightrec)
-		OBJS += libpcsxcore/lightrec/ps3.o libpcsxcore/lightrec/ps3_init.o
+		OBJS += libpcsxcore/lightrec/ps3.o libpcsxcore/lightrec/ps3_init.o libpcsxcore/lightrec/ps3_code.o
 		ifeq ($(PS3_LIGHTREC_SELFTEST),1)
 			OBJS += libpcsxcore/lightrec/ps3_test.o
 libpcsxcore/lightrec/ps3_test.o: CFLAGS += -DPS3_LIGHTREC_CORE
@@ -359,7 +359,7 @@ else ifeq ($(platform), psl1ght)
 	USE_LIBRETRO_VFS = 0
 	LIGHTREC_CODE_INV := 1
 	ifeq ($(DYNAREC),lightrec)
-		OBJS += libpcsxcore/lightrec/ps3.o libpcsxcore/lightrec/ps3_init.o
+		OBJS += libpcsxcore/lightrec/ps3.o libpcsxcore/lightrec/ps3_init.o libpcsxcore/lightrec/ps3_code.o
 		ifeq ($(PS3_LIGHTREC_SELFTEST),1)
 			OBJS += libpcsxcore/lightrec/ps3_test.o
 libpcsxcore/lightrec/ps3_test.o: CFLAGS += -DPS3_LIGHTREC_CORE
@@ -748,6 +748,9 @@ $(info MAIN_LDLIBS: $(MAIN_LDLIBS))
 $(info )
 
 include Makefile
+
+libpcsxcore/lightrec/ps3_code.o: libpcsxcore/lightrec/ps3_code.S
+	$(CC) -c $< -o $@
 
 # no special AS needed for gpu_neon
 plugins/gpu_neon/psx_gpu/psx_gpu_arm_neon.o: plugins/gpu_neon/psx_gpu/psx_gpu_arm_neon.S

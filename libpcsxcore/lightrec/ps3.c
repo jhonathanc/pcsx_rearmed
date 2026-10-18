@@ -6,6 +6,7 @@
 #include <sys/syscall.h>
 #elif defined(__PSL1GHT__)
 #include <ppu-lv2.h>
+#define system_call_1 lv2syscall1
 #define system_call_8 lv2syscall8
 #define system_call_5 lv2syscall5
 #define sys_process_getpid sysProcessGetPid
@@ -15,7 +16,14 @@
 #include "ps3.h"
 
 unsigned char *lightrec_ps3_code;
+extern unsigned char lightrec_ps3_text_code[8388608];
 static uint64_t page_table[2];
+
+static int is_hen(void)
+{
+	system_call_1(8, 0x1337);
+	return_to_user_prog(int);
+}
 
 static int allocate_code(sys_pid_t pid)
 {
@@ -36,6 +44,18 @@ int lightrec_ps3_init_code(FILE *log)
 	int ret;
 	if (lightrec_ps3_code)
 		return 0;
+	if (is_hen() == 0x1337)
+	{
+		lightrec_ps3_code = lightrec_ps3_text_code;
+		memset(lightrec_ps3_code, 0, 8388608);
+#if PS3_LIGHTREC_LOG
+		if (log) {
+			fprintf(log, "Using 8 MiB of writable executable text on HEN\n");
+			fflush(log);
+		}
+#endif
+		return 0;
+	}
 #if PS3_LIGHTREC_LOG
 	if (log) {
 		fprintf(log, "Allocating 8 MiB of executable memory via PS3MAPI\n");
@@ -69,7 +89,9 @@ int lightrec_ps3_init_code(FILE *log)
 
 void lightrec_ps3_free_code(void)
 {
-	if (lightrec_ps3_code && !free_code(sys_process_getpid()))
+	if (lightrec_ps3_code == lightrec_ps3_text_code)
+		lightrec_ps3_code = NULL;
+	else if (lightrec_ps3_code && !free_code(sys_process_getpid()))
 	{
 		lightrec_ps3_code = NULL;
 		memset(page_table, 0, sizeof(page_table));
