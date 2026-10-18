@@ -23,8 +23,17 @@ TESTS += $(addsuffix $(EXE_EXT),startup-selftest-quiet-test startup-selftest-log
 TESTS += psl1ght-log-path-test$(EXE_EXT)
 TESTS += startup-psl1ght-selftest-test$(EXE_EXT)
 TESTS += startup-platform-selftest-test$(EXE_EXT)
+TESTS += memory-sony-test$(EXE_EXT) memory-psl1ght-test$(EXE_EXT)
+MEMORY_DEPS = memory_test.c ../../libpcsxcore/lightrec/ps3.c ../../libpcsxcore/lightrec/ps3.h
+MEMORY_DEPS += $(wildcard memory_include/sys/*.h) memory_include/ppu-lv2.h
 
 all: $(TESTS)
+
+memory-sony-test$(EXE_EXT): $(MEMORY_DEPS)
+	$(CC) $(CFLAGS) -Imemory_include -D__PS3_SONY_SDK__ $< -o $@
+
+memory-psl1ght-test$(EXE_EXT): $(MEMORY_DEPS)
+	$(CC) $(CFLAGS) -Imemory_include -D__PSL1GHT__ $< -o $@
 
 log-path-test$(EXE_EXT): log_path_test.c ../../libpcsxcore/lightrec/ps3_log.c
 	$(CC) $(CFLAGS) -Iinclude -D__PS3__ -D__PS3_SONY_SDK__ -DPS3_LIGHTREC_LOG=1 -Dfopen=ps3_test_fopen $^ -o $@
@@ -63,6 +72,8 @@ mman.o: ../../deps/mman/mman.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 run: all
+	./memory-sony-test$(EXE_EXT)
+	./memory-psl1ght-test$(EXE_EXT)
 	./log-path-test$(EXE_EXT)
 	./psl1ght-log-path-test$(EXE_EXT)
 	./startup-quiet-test$(EXE_EXT)
