@@ -11,7 +11,9 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
+#ifndef __PS3_SONY_SDK__
 #include <strings.h>
+#endif
 #include <time.h>
 #include <math.h>
 #include <errno.h>
@@ -50,6 +52,9 @@
 #include "revision.h"
 
 #include <libretro.h>
+#if defined(__PSL1GHT__) && defined(LIGHTREC)
+#include "../libpcsxcore/lightrec/ps3.h"
+#endif
 #include "libretro_core_options.h"
 
 #ifdef USE_LIBRETRO_VFS
@@ -1756,7 +1761,7 @@ static void extract_directory(char *buf, const char *path, size_t size)
    }
 }
 
-#if defined(__QNX__) || defined(_WIN32)
+#if defined(__QNX__) || defined(_WIN32) || defined(__PS3_SONY_SDK__)
 /* Blackberry QNX doesn't have strcasestr */
 
 /*
@@ -3911,6 +3916,10 @@ void retro_init(void)
    struct retro_rumble_interface rumble;
    int ret;
 
+#if defined(__PSL1GHT__) && defined(LIGHTREC) && PS3_LIGHTREC_LOG
+   lightrec_ps3_executable_path = NULL;
+   environ_cb(RETRO_ENVIRONMENT_GET_LIBRETRO_PATH, &lightrec_ps3_executable_path);
+#endif
    log_mem_usage(0);
 
    msg_interface_version = 0;

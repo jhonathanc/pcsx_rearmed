@@ -18,7 +18,14 @@
  */
 
 #if PROTO
-#  if __WORDSIZE == 32
+#  if defined(__PS3_SONY_SDK__)
+#    define gpr_save_area		144
+#    define params_offset		48
+#    define abi_slot_size		8
+#    define can_sign_extend_int_p(im)	1
+#    define can_zero_extend_int_p(im)	1
+#    define fits_uint32_p(im)		1
+#  elif __WORDSIZE == 32
 #    define gpr_save_area		72	/* r14~r31 = 18 * 4 */
 #    if _CALL_SYSV
 #      define params_offset		(sizeof(jit_word_t) << 1)
@@ -43,6 +50,9 @@
 #    define fits_uint32_p(im)		((im & 0xffffffff00000000L) == 0)
 #  endif
 #  define fpr_save_area			64
+#  ifndef abi_slot_size
+#    define abi_slot_size		sizeof(jit_word_t)
+#  endif
 #  define alloca_offset			-(gpr_save_area + fpr_save_area)
 #  define ii(i)				*_jit->pc.ui++ = i
 #  if __WORDSIZE == 32
@@ -103,7 +113,7 @@ static void _FCI(jit_state_t*,int,int,int,int,int);
 static void _FXFX(jit_state_t*,int,int,int,int);
 #  define FM(o,s,a,h,b,e,r)		_FM(_jit,o,s,a,h,b,e,r)
 static void _FM(jit_state_t*,int,int,int,int,int,int,int);
-#  if __WORDSIZE == 64
+#  if __WORDSIZE == 64 || defined(__PS3_SONY_SDK__)
 #    define FMDS(o,s,a,b,e,x)		_FMDS(_jit,o,s,a,b,e,x,0)
 #    define FMDS_(o,s,a,b,e,x)		_FMDS(_jit,o,s,a,b,e,x,1)
 static void _FMDS(jit_state_t*,int,int,int,int,int,int,int);
@@ -4016,6 +4026,11 @@ _callr(jit_state_t *_jit, jit_int32_t r0
        )
 {
 #  if _CALL_AIXDESC
+#    if defined(__PS3_SONY_SDK__)
+    STD(_R2_REGNO, _SP_REGNO, 40);
+    LWZ(_R2_REGNO, r0, 4);
+    LWZ(r0, r0, 0);
+#    else
     stxi(sizeof(void*) * 5, _SP_REGNO, _R2_REGNO);
     /* FIXME Pretend to not know about r11? */
     if (r0 == _R0_REGNO) {
@@ -4028,6 +4043,7 @@ _callr(jit_state_t *_jit, jit_int32_t r0
 	ldxi(_R11_REGNO, r0, sizeof(void*) * 2);
     }
     ldr(r0, r0);
+#    endif
 #  else
 #    if _CALL_SYSV
     /* Tell double arguments were passed in registers. */
@@ -4041,7 +4057,11 @@ _callr(jit_state_t *_jit, jit_int32_t r0
     BCTRL();
 
 #  if _CALL_AIXDESC
+#    if defined(__PS3_SONY_SDK__)
+    LD(_R2_REGNO, _SP_REGNO, 40);
+#    else
     ldxi(_R2_REGNO, _SP_REGNO, sizeof(void*) * 5);
+#    endif
 #  endif
 }
 
@@ -4146,7 +4166,9 @@ _prolog(jit_state_t *_jit, jit_node_t *node)
     /* return address */
     if (_jitc->function->need_return) {
 	MFLR(_R0_REGNO);
-#if _CALL_SYSV
+#if defined(__PS3_SONY_SDK__)
+	STD(_R0_REGNO, _SP_REGNO, 16);
+#elif _CALL_SYSV
 	stxi(sizeof(jit_word_t), _SP_REGNO, _R0_REGNO);
 #else
 	stxi(sizeof(void*) * 2, _SP_REGNO, _R0_REGNO);
@@ -4156,9 +4178,13 @@ _prolog(jit_state_t *_jit, jit_node_t *node)
     if (_jitc->function->need_stack) {
 	offset = -gpr_save_area;
 	for (regno = 0; regno < jit_size(iregs);
-	     regno++, offset += sizeof(void*)) {
+	     regno++, offset += abi_slot_size) {
 	    if (jit_regset_tstbit(&_jitc->function->regset, iregs[regno]))
+#if defined(__PS3_SONY_SDK__)
+		STD(rn(iregs[regno]), _SP_REGNO, offset);
+#else
 		stxi(offset, _SP_REGNO, rn(iregs[regno]));
+#endif
 	}
 	for (offset = 0; offset < jit_size(fregs); offset++) {
 	    if (jit_regset_tstbit(&_jitc->function->regset, fregs[offset]))
@@ -4168,11 +4194,15 @@ _prolog(jit_state_t *_jit, jit_node_t *node)
     }
 
     if (_jitc->function->need_frame) {
+#if defined(__PS3_SONY_SDK__)
+	STD(_FP_REGNO, _SP_REGNO, -8);
+#else
 	stxi(-(sizeof(void*)), _SP_REGNO, _FP_REGNO);
+#endif
 	movr(_FP_REGNO, _SP_REGNO);
     }
     if (_jitc->function->need_stack) {
-#if __WORDSIZE == 32
+#if __WORDSIZE == 32 && !defined(__PS3_SONY_SDK__)
 	STWU(_SP_REGNO, _SP_REGNO, -_jitc->function->stack);
 #else
 	STDU(_SP_REGNO, _SP_REGNO, -_jitc->function->stack);
@@ -4221,7 +4251,9 @@ _epilog(jit_state_t *_jit, jit_node_t *node)
     }
 
     if (_jitc->function->need_return) {
-#if _CALL_SYSV
+#if defined(__PS3_SONY_SDK__)
+	LD(_R0_REGNO, _SP_REGNO, 16);
+#elif _CALL_SYSV
 	ldxi(_R0_REGNO, _SP_REGNO, sizeof(jit_word_t));
 #else
 	ldxi(_R0_REGNO, _SP_REGNO, sizeof(void*) * 2);
@@ -4231,9 +4263,13 @@ _epilog(jit_state_t *_jit, jit_node_t *node)
     if (_jitc->function->need_stack) {
 	offset = -gpr_save_area;
 	for (regno = 0; regno < jit_size(iregs);
-	     regno++, offset += sizeof(void*)) {
+	     regno++, offset += abi_slot_size) {
 	    if (jit_regset_tstbit(&_jitc->function->regset, iregs[regno]))
+#if defined(__PS3_SONY_SDK__)
+		LD(rn(iregs[regno]), _SP_REGNO, offset);
+#else
 		ldxi(rn(iregs[regno]), _SP_REGNO, offset);
+#endif
 	}
 	for (offset = 0; offset < 8; offset++) {
 	    if (jit_regset_tstbit(&_jitc->function->regset, fregs[offset]))
@@ -4245,7 +4281,11 @@ _epilog(jit_state_t *_jit, jit_node_t *node)
     if (_jitc->function->need_return)
 	MTLR(_R0_REGNO);
     if (_jitc->function->need_frame)
+#if defined(__PS3_SONY_SDK__)
+	LD(_FP_REGNO, _SP_REGNO, -8);
+#else
 	ldxi(_FP_REGNO, _SP_REGNO, -(sizeof(void*)));
+#endif
 
     BLR();
 }
