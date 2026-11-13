@@ -3,6 +3,7 @@
 #define PCSX_RSX_BATCH_H
 #include <string.h>
 #include "rsx.h"
+#include "blend.h"
 #define RSX_BATCH_CAPACITY 64
 #define RSX_BATCH_READS 6
 struct rsx_batch_item {
@@ -13,6 +14,9 @@ struct rsx_primitive_batch {
   struct rsx_batch_item items[RSX_BATCH_CAPACITY];
   unsigned count;
 };
+static int rsx_batch_eligible(const struct rsx_primitive *p,const uint32_t regs[8]) {
+  return !p->fill && p->count>=2 && p->bounds.w>0 && p->bounds.h>0 && !rsx_native_blend(p,regs);
+}
 static int rsx_rect_intersects(struct rsx_rect a,struct rsx_rect b) {
   return a.w>0 && a.h>0 && b.w>0 && b.h>0 &&
     a.x<b.x+b.w && b.x<a.x+a.w && a.y<b.y+b.h && b.y<a.y+a.h;
