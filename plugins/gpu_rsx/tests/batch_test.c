@@ -19,7 +19,14 @@ static void dependencies(void) {
   struct rsx_primitive_batch *b=calloc(1,sizeof(*b));
   struct rsx_primitive p=primitive(0,0,0),q=primitive(4,0,0);
   struct rsx_rect reads[RSX_BATCH_READS];uint32_t regs[8]={0},bits[64];unsigned i;
-  CHECK(b!=NULL);append(b,p,regs);CHECK(rsx_batch_can_add(b,&q,regs));
+  CHECK(b!=NULL);
+  p.semi=0;CHECK(rsx_batch_eligible(&p,regs));
+  q=p;q.bounds.x=1;append(b,p,regs);CHECK(rsx_batch_can_add(b,&q,regs));
+  regs[6]=2;CHECK(!rsx_batch_can_add(b,&q,regs));regs[6]=0;
+  q.fill=1;CHECK(!rsx_batch_eligible(&q,regs));q.fill=0;
+  q.count=0;CHECK(!rsx_batch_eligible(&q,regs));
+  b->count=0;p=primitive(0,0,0);q=primitive(4,0,0);
+  append(b,p,regs);CHECK(rsx_batch_can_add(b,&q,regs));
   q.bounds.x=3;CHECK(!rsx_batch_can_add(b,&q,regs));
   q=primitive(16,16,1);q.tpage=0;CHECK(!rsx_batch_can_add(b,&q,regs));
   q.tpage=8|16;q.clut=0;CHECK(!rsx_batch_can_add(b,&q,regs));
@@ -88,6 +95,7 @@ static void equivalence(void) {
     item.primitive.bounds.w=1+random_word()%5;item.primitive.bounds.h=1+random_word()%5;
     item.primitive.tpage=((i&7)?8|16:0)|((random_word()%4)<<5);
     item.primitive.clut=(i&15)?400*64:511*64+63;
+    item.primitive.semi=random_word()&1;
     item.primitive.raw=random_word()&1;item.primitive.v[0].u=random_word()%256;item.primitive.v[0].v=random_word()%256;
     item.primitive.v[0].color=random_word();item.regs[6]=random_word()%4;
     memcpy(sa,a,PIXELS*2);render(a,sa,&item);

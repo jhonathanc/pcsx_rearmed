@@ -787,7 +787,7 @@ int SaveState(const char *file) {
 			SPUFreeze_t spu_hdr;
 			u8 spu_part2[SPUFREEZE_F2_MAX_SIZE];
 		};
-	} u;
+	} *u;
 	unsigned short *spuram = NULL;
 	uint16_t *vram = NULL;
 	void *f;
@@ -798,6 +798,11 @@ int SaveState(const char *file) {
 
 	f = SaveFuncs.open(file, "wb");
 	if (f == NULL) return -1;
+	u = malloc(sizeof(*u));
+	if (u == NULL) {
+		SaveFuncs.close(f);
+		return -1;
+	}
 
 	misc->magic = MISC_MAGIC;
 	misc->gteBusyCycle = psxRegs.gteBusyCycle;
@@ -829,9 +834,9 @@ int SaveState(const char *file) {
 
 	// this was space for ScreenPic
 	assert(sizeof(oi) - 3 <= EX_SCREENPIC_SIZE);
-	memset(u.buf, 0, sizeof(u.buf));
-	memcpy(u.buf + 3, &oi, sizeof(oi));
-	SaveFuncs.write(f, u.buf, sizeof(u.buf));
+	memset(u->buf, 0, sizeof(u->buf));
+	memcpy(u->buf + 3, &oi, sizeof(oi));
+	SaveFuncs.write(f, u->buf, sizeof(u->buf));
 
 	if (Config.HLE)
 		psxBiosFreeze(1);
@@ -843,22 +848,22 @@ int SaveState(const char *file) {
 	SaveFuncs.write(f, &psxRegs, offsetof(psxRegisters, gteBusyCycle));
 
 	// gpu
-	u.gpu_hdr.ulFreezeVersion = 1;
-	u.gpu_hdr.ulStatus = 0;
-	memset(u.gpu_hdr.ulControl, 0, sizeof(u.gpu_hdr.ulControl));
-	GPU_freeze(1, &u.gpu_hdr, &vram);
-	SaveFuncs.write(f, &u.gpu_hdr, sizeof(u.gpu_hdr));
+	u->gpu_hdr.ulFreezeVersion = 1;
+	u->gpu_hdr.ulStatus = 0;
+	memset(u->gpu_hdr.ulControl, 0, sizeof(u->gpu_hdr.ulControl));
+	GPU_freeze(1, &u->gpu_hdr, &vram);
+	SaveFuncs.write(f, &u->gpu_hdr, sizeof(u->gpu_hdr));
 	SaveFuncs.write(f, vram, 1024*512*2);
 
 	// spu
-	SPU_freeze(1, &u.spu_hdr, &spuram, u.spu_part2, psxRegs.cycle);
-	assert(u.spu_hdr.Size > sizeof(u.spu_hdr) + 512*1024);
-	assert(u.spu_hdr.Size <= sizeof(u.spu_hdr) + 512*1024 + sizeof(u.spu_part2));
+	SPU_freeze(1, &u->spu_hdr, &spuram, u->spu_part2, psxRegs.cycle);
+	assert(u->spu_hdr.Size > sizeof(u->spu_hdr) + 512*1024);
+	assert(u->spu_hdr.Size <= sizeof(u->spu_hdr) + 512*1024 + sizeof(u->spu_part2));
 	assert(spuram);
-	SaveFuncs.write(f, &u.spu_hdr.Size, 4); // redundant, for compat
-	SaveFuncs.write(f, &u.spu_hdr, sizeof(u.spu_hdr));
+	SaveFuncs.write(f, &u->spu_hdr.Size, 4); // redundant, for compat
+	SaveFuncs.write(f, &u->spu_hdr, sizeof(u->spu_hdr));
 	SaveFuncs.write(f, spuram, 512*1024);
-	SaveFuncs.write(f, &u.spu_part2, u.spu_hdr.Size - sizeof(u.spu_hdr) - 512*1024);
+	SaveFuncs.write(f, &u->spu_part2, u->spu_hdr.Size - sizeof(u->spu_hdr) - 512*1024);
 
 	sioFreeze(f, 1);
 	cdrFreeze(f, 1);
@@ -869,6 +874,7 @@ int SaveState(const char *file) {
 	padFreeze(f, 1);
 
 	memset(misc, 0xff, sizeof(*misc));
+	free(u);
 	SaveFuncs.close(f);
 	return 0;
 }
@@ -884,7 +890,7 @@ int LoadState(const char *file) {
 			SPUFreeze_t spu_hdr;
 			u8 spu_part2[SPUFREEZE_F2_MAX_SIZE];
 		};
-	} u;
+	} *u;
 	unsigned short *spuram = NULL;
 	uint16_t *vram = NULL;
 	boolean hle, oldhle;
@@ -896,6 +902,11 @@ int LoadState(const char *file) {
 
 	f = SaveFuncs.open(file, "rb");
 	if (f == NULL) return -1;
+	u = malloc(sizeof(*u));
+	if (u == NULL) {
+		SaveFuncs.close(f);
+		return -1;
+	}
 
 	if (!file)
 		file = "(stream)";
@@ -957,23 +968,23 @@ int LoadState(const char *file) {
 		psxBiosFreeze(0);
 
 	// gpu
-	SaveFuncs.read(f, &u.gpu_hdr, sizeof(u.gpu_hdr));
-	GPU_freeze(0, &u.gpu_hdr, &vram);
+	SaveFuncs.read(f, &u->gpu_hdr, sizeof(u->gpu_hdr));
+	GPU_freeze(0, &u->gpu_hdr, &vram);
 	assert(vram);
 	SaveFuncs.read(f, vram, 1024*512*2);
 	gpuSyncPluginSR();
 
 	// spu
 	SaveFuncs.read(f, &Size, 4);
-	if (sizeof(u.spu_hdr) + 512*1024 < Size &&
-	    (uint32_t)Size <= sizeof(u.spu_hdr) + 512*1024u + sizeof(u.spu_part2))
+	if (sizeof(u->spu_hdr) + 512*1024 < Size &&
+	    (uint32_t)Size <= sizeof(u->spu_hdr) + 512*1024u + sizeof(u->spu_part2))
 	{
 		SPU_freeze(0, NULL, &spuram, NULL, psxRegs.cycle);
 		assert(spuram);
-		SaveFuncs.read(f, &u.spu_hdr, sizeof(u.spu_hdr));
+		SaveFuncs.read(f, &u->spu_hdr, sizeof(u->spu_hdr));
 		SaveFuncs.read(f, spuram, 512*1024);
-		SaveFuncs.read(f, &u.spu_part2, Size - sizeof(u.spu_hdr) - 512*1024);
-		SPU_freeze(0, &u.spu_hdr, &spuram, u.spu_part2, psxRegs.cycle);
+		SaveFuncs.read(f, &u->spu_part2, Size - sizeof(u->spu_hdr) - 512*1024);
+		SPU_freeze(0, &u->spu_hdr, &spuram, u->spu_part2, psxRegs.cycle);
 	}
 	else
 	{
@@ -1006,6 +1017,7 @@ int LoadState(const char *file) {
 	result = 0;
 cleanup:
 	memset(misc, 0xff, sizeof(*misc));
+	free(u);
 	SaveFuncs.close(f);
 	return result;
 }

@@ -9,7 +9,7 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-$(TARGET): batch_test.c ../batch.h ../rsx.h $(RSX_INTERFACE)
+$(TARGET): batch_test.c ../batch.h ../blend.h ../rsx.h $(RSX_INTERFACE)
 	$(CC) $(CFLAGS) batch_test.c $(LDFLAGS) -o $@
 $(NATIVE_TARGET): native_blend_test.c ../blend.h ../rsx.h $(RSX_INTERFACE)
 	$(CC) $(CFLAGS) native_blend_test.c $(LDFLAGS) -o $@

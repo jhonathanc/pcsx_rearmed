@@ -440,7 +440,7 @@ int rsx_hw_draw(const struct rsx_primitive *p,const uint32_t *regs) {
   struct rsx_batch_item *item;
   if(hw.failed) return 0;
   if(p->bounds.w<=0 || p->bounds.h<=0 || (!p->fill && !p->count)) return 1;
-  if(p->semi && !rsx_native_blend(p,regs) && !p->fill && p->count>=2 && p->bounds.w>0 && p->bounds.h>0) {
+  if(rsx_batch_eligible(p,regs)) {
     if(!rsx_batch_can_add(&hw.primitives,p,regs)) {
       if(hw.primitives.count==RSX_BATCH_CAPACITY) BATCH_COUNT(5,1);
       else BATCH_COUNT(4,1);
